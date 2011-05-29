@@ -1,17 +1,29 @@
 require 'handlebars-rails/version'
 require 'handlebars-rails/v8'
-require "active_support"
+require 'active_support'
 
 module Handlebars
   class TemplateHandler
 
-    def self.js
-      handlebars = File.join(Rails.root, "vendor", "javascripts", "handlebars.js")
+    def self.js_library_path=(js_library_path)
+      @js_library_path = js_library_path
+    end
 
-      unless File.exists?(handlebars)
-        raise "Could not find handlebars.js. Please copy it to #{handlebars}"
+    def self.default_js_library_path
+      Rails.root + "vendor/javascripts/handlebars.js"
+    end
+
+    def self.handlebars
+      return @handlebars if @handlebars
+      if File.exists?(@handlebars = (@js_library_path || default_js_library_path))
+        @handlebars
+      else
+        raise LoadError, "Could not load Handlebars.js from #{@handlebars}. " <<
+          "Change path by setting Handlebars::TemplateHandler.js_library_path"
       end
+    end
 
+    def self.js
       Thread.current[:v8_context] ||= begin
         V8::Context.new do |js|
           js.load(handlebars)
